@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Join the WSLR Loyalty Program</title>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&family=Open+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+  <style>
+    :root {
+      --blue:    #0a5c9e;
+      --blue2:   #0d7acc;
+      --sand:    #f5f0e8;
+      --white:   #ffffff;
+      --text:    #1a1a2e;
+      --muted:   #6b7280;
+      --border:  #d0dce8;
+      --success: #0f7a4a;
+      --error:   #c0392b;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Open Sans', sans-serif; background: var(--sand); color: var(--text); min-height: 100vh; }
+
+    .hero {
+      background: linear-gradient(160deg, #0a5c9e 0%, #0d9fd4 60%, #5ecbe8 100%);
+      padding: 40px 20px 60px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute;
+      bottom: -2px; left: 0; right: 0;
+      height: 50px;
+      background: var(--sand);
+      clip-path: ellipse(55% 100% at 50% 100%);
+    }
+    .hero-logo { max-height: 80px; margin-bottom: 20px; filter: drop-shadow(0 2px 8px rgba(0,0,0,0.2)); }
+    .hero h1 { font-family: 'Montserrat', sans-serif; font-size: clamp(24px, 5vw, 36px); font-weight: 800; color: #fff; margin-bottom: 10px; text-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+    .hero p { color: rgba(255,255,255,0.9); font-size: 16px; max-width: 480px; margin: 0 auto; line-height: 1.6; }
+
+    .perks { display: flex; justify-content: center; gap: 16px; flex-wrap: wrap; padding: 32px 20px 8px; max-width: 760px; margin: 0 auto; }
+    .perk { background: var(--white); border-radius: 12px; padding: 16px 20px; text-align: center; flex: 1; min-width: 160px; box-shadow: 0 2px 10px rgba(0,0,0,0.07); border-top: 3px solid var(--blue2); }
+    .perk-icon { font-size: 28px; margin-bottom: 6px; }
+    .perk-title { font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 14px; color: var(--blue); margin-bottom: 4px; }
+    .perk-desc { font-size: 12px; color: var(--muted); line-height: 1.4; }
+
+    .form-wrap { max-width: 580px; margin: 24px auto 40px; padding: 0 20px; }
+    .form-card { background: var(--white); border-radius: 16px; padding: 32px; box-shadow: 0 4px 24px rgba(0,0,0,0.09); }
+    .form-title { font-family: 'Montserrat', sans-serif; font-size: 20px; font-weight: 700; color: var(--blue); margin-bottom: 24px; padding-bottom: 12px; border-bottom: 2px solid #e8f0f8; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+    .form-group { margin-bottom: 14px; }
+    label { display: block; font-size: 12px; font-weight: 600; color: #555; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 5px; }
+    input, select { width: 100%; padding: 10px 13px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 15px; font-family: 'Open Sans', sans-serif; background: #f8faff; color: var(--text); transition: border-color 0.15s; outline: none; }
+    input:focus, select:focus { border-color: var(--blue2); background: #fff; }
+    .optional { font-weight: 400; color: #aaa; font-size: 11px; text-transform: none; }
+
+    #address-container { position: relative; }
+    .clear-address { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 16px; color: #aaa; display: none; }
+
+    .opt-in { display: flex; align-items: flex-start; gap: 10px; background: #f0f7ff; border-radius: 8px; padding: 12px; margin-bottom: 20px; }
+    .opt-in input[type=checkbox] { width: 16px; height: 16px; margin-top: 2px; flex-shrink: 0; }
+    .opt-in label { text-transform: none; font-size: 13px; font-weight: 400; color: #555; line-height: 1.5; }
+
+    .submit-btn { width: 100%; padding: 14px; background: linear-gradient(135deg, var(--blue) 0%, var(--blue2) 100%); color: #fff; border: none; border-radius: 10px; font-family: 'Montserrat', sans-serif; font-size: 16px; font-weight: 700; cursor: pointer; letter-spacing: 0.5px; transition: opacity 0.2s, transform 0.1s; box-shadow: 0 4px 14px rgba(10,92,158,0.3); }
+    .submit-btn:hover { opacity: 0.92; transform: translateY(-1px); }
+    .submit-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+    .alert { padding: 12px 16px; border-radius: 8px; font-size: 14px; margin-bottom: 16px; display: none; }
+    .alert.error { background: #fce8e8; color: var(--error); border: 1px solid #f5c6cb; display: block; }
+
+    .success-screen { display: none; text-align: center; padding: 40px 20px; }
+    .success-screen.show { display: block; }
+    .success-icon { font-size: 64px; margin-bottom: 16px; }
+    .success-screen h2 { font-family: 'Montserrat', sans-serif; font-size: 26px; font-weight: 800; color: var(--blue); margin-bottom: 10px; }
+    .success-screen p { color: var(--muted); font-size: 15px; line-height: 1.6; margin-bottom: 8px; }
+    .membership-badge { display: inline-block; background: linear-gradient(135deg, var(--blue), var(--blue2)); color: #fff; font-family: 'Montserrat', sans-serif; font-size: 22px; font-weight: 800; padding: 14px 32px; border-radius: 50px; margin: 20px 0; letter-spacing: 2px; box-shadow: 0 4px 16px rgba(10,92,158,0.3); }
+
+    footer { text-align: center; padding: 24px; font-size: 12px; color: #aaa; }
+    footer a { color: var(--blue2); text-decoration: none; }
+
+    @media (max-width: 500px) {
+      .form-row { grid-template-columns: 1fr; }
+      .form-card { padding: 20px; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="hero">
+    <img class="hero-logo" src="https://www.wslr.com.au/wp-content/uploads/2021/07/ChatGPT_Image_Sep_24__2025__04_25_00_PM-removebg-preview-1.png" alt="WSLR Logo" />
+    <h1>Join Free until <span id="deadline-date"></span></h1>
+    <p>As a thank you for your recent stay, we're giving you complimentary membership to the WSLR Loyalty Program, usually $49 but free for the next 48 hours, act quick!</p>
+  </div>
+  <script>
+    const d = new Date(); d.setDate(d.getDate() + 2);
+    document.getElementById("deadline-date").textContent = d.toLocaleDateString("en-AU", { weekday:"long", day:"numeric", month:"long" });
+  </script>
+
+  <div class="perks">
+    <div class="perk"><div class="perk-icon">💰</div><div class="perk-title">10% Off Every Stay</div><div class="perk-desc">Up to $75 discount on every booking you make</div></div>
+    <div class="perk"><div class="perk-icon">📅</div><div class="perk-title">Flexible Cancellation</div><div class="perk-desc">Free cancellation up to 10 days before arrival outside of peak periods</div></div>
+    <div class="perk"><div class="perk-icon">🎂</div><div class="perk-title">Birthday Upgrade</div><div class="perk-desc">Complimentary cabin upgrade in your birthday month, subject to availability</div></div>
+    <div class="perk"><div class="perk-icon">⭐</div><div class="perk-title">Tier Rewards</div><div class="perk-desc">Earn Silver, Gold &amp; Platinum status as you stay</div></div>
+  </div>
+
+  <div class="form-wrap">
+    <div class="form-card" id="form-card">
+      <div class="form-title">✍️ Claim Your Free Membership</div>
+      <div class="alert" id="alert"></div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>First Name *</label>
+          <input type="text" id="first_name" placeholder="e.g. Mark" />
+        </div>
+        <div class="form-group">
+          <label>Last Name *</label>
+          <input type="text" id="last_name" placeholder="e.g. Charlesworth" />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Email Address *</label>
+        <input type="email" id="email" placeholder="you@example.com" />
+      </div>
+
+      <div class="form-group">
+        <label>Mobile Number *</label>
+        <input type="tel" id="mobile" placeholder="04xx xxx xxx" />
+      </div>
+
+      <div class="form-group">
+        <label>Home Address</label>
+        <div id="address-container">
+          <input type="text" id="address" placeholder="Start typing your address..." autocomplete="off" />
+          <button class="clear-address" id="clear-address" onclick="clearAddress()">✕</button>
+        </div>
+        <input type="hidden" id="suburb" />
+        <input type="hidden" id="postcode" />
+        <input type="hidden" id="state" />
+      </div>
+
+      <div class="form-group">
+        <label>Date of Birth <span class="optional">(optional, for your birthday upgrade perk)</span></label>
+        <input type="date" id="dob" />
+      </div>
+
+      <p style="font-size:12px;color:#999;margin-bottom:20px;line-height:1.6;">By signing up you agree to receive membership-related emails from WSLR, including your welcome confirmation and occasional member offers. You can unsubscribe at any time.</p>
+
+      <button class="submit-btn" id="submit-btn" onclick="handleSubmit()">Join the Loyalty Program 🏖️</button>
+    </div>
+
+    <div class="success-screen" id="success-screen">
+      <div class="success-icon">🎉</div>
+      <h2>Welcome to the Club!</h2>
+      <p>You're now a WSLR Loyalty Member. Your complimentary membership is confirmed. Your membership number is:</p>
+      <div class="membership-badge" id="membership-display">WSLR-0000</div>
+      <p>We've sent a welcome email to <strong id="success-email"></strong>. Check your inbox!</p>
+      <p style="margin-top:16px;">Quote your membership number whenever you call or email to book and we'll apply your discount automatically.</p>
+      <p style="margin-top:24px;"><a href="https://wslr.com.au">← Return to WSLR website</a></p>
+    </div>
+  </div>
+
+  <footer>
+    <p>Wollongong Surf Leisure Resort · 201 Pioneer Rd, Fairy Meadow NSW 2519</p>
+    <p style="margin-top:4px;"><a href="tel:0242836999">(02) 4283 6999</a> · <a href="mailto:enquiries@wslr.com.au">enquiries@wslr.com.au</a></p>
+    <p style="margin-top:8px; color:#ccc;">Complimentary membership offer valid for 48 hours post-checkout. Normally $49/year. Discount applies to direct bookings only.</p>
+  </footer>
+
+  <!-- Google Places -->
+  <script>
+    const GOOGLE_API_KEY = "YOUR_GOOGLE_PLACES_API_KEY";
+    const gScript = document.createElement("script");
+    gScript.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_API_KEY}&libraries=places&callback=initAutocomplete`;
+    gScript.async = true;
+    document.head.appendChild(gScript);
+
+    let autocomplete;
+    function initAutocomplete() {
+      const input = document.getElementById("address");
+      autocomplete = new google.maps.places.Autocomplete(input, {
+        types: ["address"],
+        componentRestrictions: { country: "au" },
+      });
+      autocomplete.addListener("place_changed", () => {
+        const place = autocomplete.getPlace();
+        let suburb = "", postcode = "", state = "";
+        (place.address_components || []).forEach((c) => {
+          if (c.types.includes("locality")) suburb = c.long_name;
+          if (c.types.includes("postal_code")) postcode = c.long_name;
+          if (c.types.includes("administrative_area_level_1")) state = c.short_name;
+        });
+        document.getElementById("suburb").value = suburb;
+        document.getElementById("postcode").value = postcode;
+        document.getElementById("state").value = state;
+        document.getElementById("clear-address").style.display = "block";
+      });
+    }
+    function clearAddress() {
+      ["address","suburb","postcode","state"].forEach(id => document.getElementById(id).value = "");
+      document.getElementById("clear-address").style.display = "none";
+    }
+  </script>
+
+  <script>
+    const SUPABASE_URL           = "https://ngfbtwhndjvmlsiqmtci.supabase.co";
+    const SUPABASE_ANON_KEY      = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5nZmJ0d2huZGp2bWxzaXFtdGNpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM3ODU1MjMsImV4cCI6MjA4OTM2MTUyM30.pjIuVfpaUAqUBubs9jc9YYmYEu-xixAMa9pGGU_eT7I";
+    const EMAILJS_PUBLIC_KEY     = "EXDvEg_Ir9QaA8R5I";
+    const EMAILJS_SERVICE_ID     = "service_ne3i02j";
+    const EMAILJS_GUEST_TEMPLATE = "template_q30dlyc";
+    const EMAILJS_STAFF_TEMPLATE = "template_t3gty8m";
+    const STAFF_EMAIL            = "enquiries@wslr.com.au";
+
+    const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    emailjs.init(EMAILJS_PUBLIC_KEY);
+
+    function showAlert(msg) {
+      const el = document.getElementById("alert");
+      el.textContent = msg;
+      el.className = "alert error";
+    }
+    function val(id) { return document.getElementById(id).value.trim(); }
+
+    async function getNextMembershipNo() {
+      const { data } = await sb.from("vip_sequence").select("last_no").eq("id", 1).single();
+      const next = (data?.last_no || 0) + 1;
+      await sb.from("vip_sequence").update({ last_no: next }).eq("id", 1);
+      return "WSLR-" + String(next).padStart(4, "0");
+    }
+
+    async function handleSubmit() {
+      document.getElementById("alert").className = "alert";
+      const firstName = val("first_name");
+      const lastName  = val("last_name");
+      const email     = val("email");
+      const mobile    = val("mobile");
+      const dob       = val("dob");
+      const suburb    = document.getElementById("suburb").value;
+      const postcode  = document.getElementById("postcode").value;
+      const address   = val("address");
+      const marketing = true;
+
+      if (!firstName || !lastName) { showAlert("Please enter your first and last name."); return; }
+      if (!email || !email.includes("@")) { showAlert("Please enter a valid email address."); return; }
+      if (!mobile) { showAlert("Please enter your mobile number."); return; }
+
+      const btn = document.getElementById("submit-btn");
+      btn.disabled = true;
+      btn.textContent = "Joining...";
+
+      try {
+        // Check for duplicate email
+        const { data: existing } = await sb.from("vip_members").select("id").eq("email", email).maybeSingle();
+        if (existing) {
+          showAlert("An account with this email already exists. Please contact us if you need help.");
+          btn.disabled = false; btn.textContent = "Join the Loyalty Program 🏖️";
+          return;
+        }
+
+	// Check for duplicate mobile
+	const { data: existingMobile } = await sb.from("vip_members").select("id").eq("mobile", mobile).maybeSingle();
+	if (existingMobile) {
+  	 showAlert("This mobile number is already registered. Please contact us on (02) 4283 6999 if you need help.");
+ 	 btn.disabled = false; btn.textContent = "Join the Loyalty Program 🏖️";
+  	 return;
+	 }
+
+        const membershipNo = await getNextMembershipNo();
+
+        const { error: insertErr } = await sb.from("vip_members").insert({
+          membership_no:    membershipNo,
+          first_name:       firstName,
+          last_name:        lastName,
+          email:            email,
+          mobile:           mobile,
+          town:             suburb || address || null,
+          postcode:         postcode || null,
+          dob:              dob || null,
+          status:           "Active",
+          date_joined:      new Date().toISOString().slice(0, 10),
+          marketing_opt_in: marketing,
+          tier:             "Silver",
+          no_of_visits:     0,
+        });
+        if (insertErr) throw insertErr;
+
+        // Welcome email to guest
+        await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_GUEST_TEMPLATE, {
+          to_name:       firstName,
+          to_email:      email,
+          membership_no: membershipNo,
+        });
+
+        // Staff notification
+        await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_STAFF_TEMPLATE, {
+          to_email:      STAFF_EMAIL,
+          member_name:   `${firstName} ${lastName}`,
+          email:         email,
+          mobile:        mobile,
+          address:       address || "Not provided",
+          membership_no: membershipNo,
+          joined:        new Date().toLocaleDateString("en-AU"),
+        });
+
+        // Show success
+        document.getElementById("form-card").style.display = "none";
+        document.getElementById("membership-display").textContent = membershipNo;
+        document.getElementById("success-email").textContent = email;
+        document.getElementById("success-screen").classList.add("show");
+
+      } catch (e) {
+        showAlert("Something went wrong. Please try again or call us on (02) 4283 6999.");
+        console.error(e);
+        btn.disabled = false;
+        btn.textContent = "Join the Loyalty Program 🏖️";
+      }
+    }
+  </script>
+
+</body>
+</html>
