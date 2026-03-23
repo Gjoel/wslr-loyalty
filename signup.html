@@ -58,7 +58,6 @@
     .optional { font-weight: 400; color: #aaa; font-size: 11px; text-transform: none; }
 
     #address-container { position: relative; }
-    .clear-address { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 16px; color: #aaa; display: none; }
 
     .opt-in { display: flex; align-items: flex-start; gap: 10px; background: #f0f7ff; border-radius: 8px; padding: 12px; margin-bottom: 20px; }
     .opt-in input[type=checkbox] { width: 16px; height: 16px; margin-top: 2px; flex-shrink: 0; }
@@ -114,11 +113,11 @@
       <div class="form-row">
         <div class="form-group">
           <label>First Name *</label>
-          <input type="text" id="first_name" placeholder="e.g. Mark" />
+          <input type="text" id="first_name" placeholder="e.g. John" />
         </div>
         <div class="form-group">
           <label>Last Name *</label>
-          <input type="text" id="last_name" placeholder="e.g. Charlesworth" />
+          <input type="text" id="last_name" placeholder="e.g. Smith" />
         </div>
       </div>
 
@@ -133,14 +132,19 @@
       </div>
 
       <div class="form-group">
-        <label>Home Address</label>
-        <div id="address-container">
-          <input type="text" id="address" placeholder="Start typing your address..." autocomplete="off" />
-          <button class="clear-address" id="clear-address" onclick="clearAddress()">✕</button>
+        <label>Street Address</label>
+        <input type="text" id="address" placeholder="e.g. 12 Beach Road" autocomplete="street-address" />
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Town / Suburb</label>
+          <input type="text" id="suburb" placeholder="e.g. Wollongong" autocomplete="address-level2" />
         </div>
-        <input type="hidden" id="suburb" />
-        <input type="hidden" id="postcode" />
-        <input type="hidden" id="state" />
+        <div class="form-group">
+          <label>Postcode</label>
+          <input type="text" id="postcode" placeholder="e.g. 2500" maxlength="4" autocomplete="postal-code" />
+        </div>
       </div>
 
       <div class="form-group">
@@ -169,41 +173,6 @@
     <p style="margin-top:4px;"><a href="tel:0242836999">(02) 4283 6999</a> · <a href="mailto:enquiries@wslr.com.au">enquiries@wslr.com.au</a></p>
     <p style="margin-top:8px; color:#ccc;">Complimentary membership offer valid for 48 hours post-checkout. Normally $49/year. Discount applies to direct bookings only.</p>
   </footer>
-
-  <!-- Google Places -->
-  <script>
-    const GOOGLE_API_KEY = "YOUR_GOOGLE_PLACES_API_KEY";
-    const gScript = document.createElement("script");
-    gScript.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_API_KEY}&libraries=places&callback=initAutocomplete`;
-    gScript.async = true;
-    document.head.appendChild(gScript);
-
-    let autocomplete;
-    function initAutocomplete() {
-      const input = document.getElementById("address");
-      autocomplete = new google.maps.places.Autocomplete(input, {
-        types: ["address"],
-        componentRestrictions: { country: "au" },
-      });
-      autocomplete.addListener("place_changed", () => {
-        const place = autocomplete.getPlace();
-        let suburb = "", postcode = "", state = "";
-        (place.address_components || []).forEach((c) => {
-          if (c.types.includes("locality")) suburb = c.long_name;
-          if (c.types.includes("postal_code")) postcode = c.long_name;
-          if (c.types.includes("administrative_area_level_1")) state = c.short_name;
-        });
-        document.getElementById("suburb").value = suburb;
-        document.getElementById("postcode").value = postcode;
-        document.getElementById("state").value = state;
-        document.getElementById("clear-address").style.display = "block";
-      });
-    }
-    function clearAddress() {
-      ["address","suburb","postcode","state"].forEach(id => document.getElementById(id).value = "");
-      document.getElementById("clear-address").style.display = "none";
-    }
-  </script>
 
   <script>
     const SUPABASE_URL           = "https://ngfbtwhndjvmlsiqmtci.supabase.co";
@@ -238,9 +207,9 @@
       const email     = val("email");
       const mobile    = val("mobile");
       const dob       = val("dob");
-      const suburb    = document.getElementById("suburb").value;
-      const postcode  = document.getElementById("postcode").value;
       const address   = val("address");
+      const suburb    = val("suburb");
+      const postcode  = val("postcode");
       const marketing = true;
 
       if (!firstName || !lastName) { showAlert("Please enter your first and last name."); return; }
@@ -260,14 +229,6 @@
           return;
         }
 
-	// Check for duplicate mobile
-	const { data: existingMobile } = await sb.from("vip_members").select("id").eq("mobile", mobile).maybeSingle();
-	if (existingMobile) {
-  	 showAlert("This mobile number is already registered. Please contact us on (02) 4283 6999 if you need help.");
- 	 btn.disabled = false; btn.textContent = "Join the Loyalty Program 🏖️";
-  	 return;
-	 }
-
         const membershipNo = await getNextMembershipNo();
 
         const { error: insertErr } = await sb.from("vip_members").insert({
@@ -276,7 +237,7 @@
           last_name:        lastName,
           email:            email,
           mobile:           mobile,
-          town:             suburb || address || null,
+          town:             suburb || null,
           postcode:         postcode || null,
           dob:              dob || null,
           status:           "Active",
@@ -300,7 +261,7 @@
           member_name:   `${firstName} ${lastName}`,
           email:         email,
           mobile:        mobile,
-          address:       address || "Not provided",
+          address:       [address, suburb, postcode].filter(Boolean).join(", ") || "Not provided",
           membership_no: membershipNo,
           joined:        new Date().toLocaleDateString("en-AU"),
         });
